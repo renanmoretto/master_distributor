@@ -1,5 +1,5 @@
 import random
-from typing import TypedDict, Callable, Any
+from typing import TypedDict, Callable, Any, Optional
 
 import pandas as pd
 import polars as pl
@@ -30,7 +30,7 @@ def _ensure_columns(
     if missing_cols:
         raise ValueError(f'missing columns on dataframe {missing_cols}')
 
-    df = df.copy()
+    df = df[required_columns].copy()
 
     for int_col in int_columns:
         df[int_col] = df[int_col].astype(int)  # type: ignore
@@ -41,26 +41,25 @@ def _ensure_columns(
     return df
 
 
-def _parse_trades_master(trades_master: pd.DataFrame) -> pl.LazyFrame:
-    df = trades_master.copy()
+def _parse_dataframe_to_lazy(
+    df: pd.DataFrame,
+    required_columns: list[str],
+    int_columns: list[str],
+    float_columns: list[str],
+    consolidate_by: Optional[list[str]] = None,
+) -> pl.LazyFrame:
+    df = df.copy()
     df = _ensure_columns(
         df=df,
-        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE'],
-        int_columns=['QUANTITY'],
-        float_columns=['PRICE'],
+        required_columns=required_columns,
+        int_columns=int_columns,
+        float_columns=float_columns,
     )
-    return pl.from_pandas(df).lazy()
-
-
-def _parse_allocations(allocations: pd.DataFrame) -> pl.LazyFrame:
-    df = allocations.copy()
-    df = _ensure_columns(
-        df=df,
-        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PORTFOLIO'],
-        int_columns=['QUANTITY'],
-        float_columns=[],
-    )
-    return pl.from_pandas(df).lazy()
+    df_lazy = pl.from_pandas(df).lazy()
+    if consolidate_by:
+        df_lazy = df_lazy.group_by(consolidate_by).sum()
+    df_lazy = df_lazy.select(required_columns)
+    return df_lazy
 
 
 def _compare_quantitites(master: pl.LazyFrame, allocations: pl.LazyFrame):
@@ -168,8 +167,22 @@ def default_distribute(
     qty_calculator: Callable[[dict[str, Any]], int],
     shuffle_orders: bool = True,
 ) -> pd.DataFrame:
-    master_lazy: pl.LazyFrame = _parse_trades_master(trades_master)
-    allocations_lazy: pl.LazyFrame = _parse_allocations(allocations)
+    master_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
+        df=trades_master,
+        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE'],
+        int_columns=['QUANTITY'],
+        float_columns=['PRICE'],
+        consolidate_by=['BROKER', 'TICKER', 'SIDE', 'PRICE'],
+    )
+
+    allocations_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
+        df=allocations,
+        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PORTFOLIO'],
+        int_columns=['QUANTITY'],
+        float_columns=[],
+        consolidate_by=['BROKER', 'TICKER', 'SIDE', 'PORTFOLIO'],
+    )
+
     _compare_quantitites(master_lazy, allocations_lazy)
 
     trade_ids: list[TradeID] = (
