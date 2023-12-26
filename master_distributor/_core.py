@@ -1,6 +1,8 @@
 import random
 from typing import TypedDict, Callable, Any
 
+from dataclasses import dataclass
+
 import pandas as pd
 import polars as pl
 
@@ -18,6 +20,19 @@ class Distribution(TypedDict):
     QUANTITY: int
     PRICE: float
     PORTFOLIO: str
+
+
+@dataclass(frozen=True, slots=True)
+class DistributionData:
+    master_lazy: pl.LazyFrame
+    allocations_lazy: pl.LazyFrame
+    trade_ids: list[TradeID]
+
+    def master_by_trade_id(self, trade_id: TradeID) -> pl.LazyFrame:
+        return _filter_lazy_by_trade_id(self.master_lazy, trade_id)
+
+    def allocations_by_trade_id(self, trade_id: TradeID) -> pl.LazyFrame:
+        return _filter_lazy_by_trade_id(self.allocations_lazy, trade_id)
 
 
 def _ensure_columns(
@@ -71,6 +86,39 @@ def _compare_quantitites(master: pl.LazyFrame, allocations: pl.LazyFrame):
         raise ValueError('Quantities for master and allocations are not equal')
 
 
+def parse_data(
+    trades_master: pd.DataFrame,
+    allocations: pd.DataFrame,
+) -> DistributionData:
+    master_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
+        df=trades_master,
+        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE'],
+        int_columns=['QUANTITY'],
+        float_columns=['PRICE'],
+        consolidate_by=['BROKER', 'TICKER', 'SIDE', 'PRICE'],
+    )
+
+    allocations_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
+        df=allocations,
+        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PORTFOLIO'],
+        int_columns=['QUANTITY'],
+        float_columns=[],
+        consolidate_by=['BROKER', 'TICKER', 'SIDE', 'PORTFOLIO'],
+    )
+
+    _compare_quantitites(master_lazy, allocations_lazy)
+
+    trade_ids: list[TradeID] = (
+        master_lazy.select(['BROKER', 'TICKER', 'SIDE']).collect().unique().to_dicts()
+    )  # type: ignore
+
+    return DistributionData(
+        master_lazy=master_lazy,
+        allocations_lazy=allocations_lazy,
+        trade_ids=trade_ids,
+    )
+
+
 def _filter_lazy_by_trade_id(
     lazyframe: pl.LazyFrame,
     trade_id: TradeID,
@@ -82,7 +130,7 @@ def _filter_lazy_by_trade_id(
     )
 
 
-def _distribute_trade_id(
+def distribute_trade_id(
     master_trade_id: list[tuple[str, str, str, int, float]],
     allocations_trade_id: list[tuple[str, str, str, int, str]],
     qty_calculator: Callable[[dict[str, Any]], int],
@@ -138,19 +186,21 @@ def _distribute_trade_id(
     return distribution_trade_id
 
 
-def _distribute_trade_ids(
-    master_lazy: pl.LazyFrame,
-    allocations_lazy: pl.LazyFrame,
-    trade_ids: list[TradeID],
+def distribute_trade_ids(
+    distribution_data: DistributionData,
     qty_calculator: Callable[[dict[str, Any]], int],
     shuffle_orders: bool = True,
 ) -> list[Distribution]:
     distributions: list[Distribution] = []
-    for trade_id in trade_ids:
-        master_trade_id = _filter_lazy_by_trade_id(master_lazy, trade_id)
-        allocations_trade_id = _filter_lazy_by_trade_id(allocations_lazy, trade_id)
+    for trade_id in distribution_data.trade_ids:
+        master_trade_id = _filter_lazy_by_trade_id(
+            distribution_data.master_lazy, trade_id
+        )
+        allocations_trade_id = _filter_lazy_by_trade_id(
+            distribution_data.allocations_lazy, trade_id
+        )
 
-        trade_id_distribution = _distribute_trade_id(
+        trade_id_distribution = distribute_trade_id(
             master_trade_id=master_trade_id.collect().rows(),  # type: ignore
             allocations_trade_id=allocations_trade_id.collect().rows(),  # type: ignore
             qty_calculator=qty_calculator,
@@ -161,38 +211,16 @@ def _distribute_trade_ids(
     return distributions
 
 
-def default_distribute(
+def easy_distribute(
     trades_master: pd.DataFrame,
     allocations: pd.DataFrame,
     qty_calculator: Callable[[dict[str, Any]], int],
     shuffle_orders: bool = True,
 ) -> pd.DataFrame:
-    master_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
-        df=trades_master,
-        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE'],
-        int_columns=['QUANTITY'],
-        float_columns=['PRICE'],
-        consolidate_by=['BROKER', 'TICKER', 'SIDE', 'PRICE'],
-    )
+    distribution_data = parse_data(trades_master, allocations)
 
-    allocations_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
-        df=allocations,
-        required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PORTFOLIO'],
-        int_columns=['QUANTITY'],
-        float_columns=[],
-        consolidate_by=['BROKER', 'TICKER', 'SIDE', 'PORTFOLIO'],
-    )
-
-    _compare_quantitites(master_lazy, allocations_lazy)
-
-    trade_ids: list[TradeID] = (
-        master_lazy.select(['BROKER', 'TICKER', 'SIDE']).collect().unique().to_dicts()
-    )  # type: ignore
-
-    distribution = _distribute_trade_ids(
-        master_lazy=master_lazy,
-        allocations_lazy=allocations_lazy,
-        trade_ids=trade_ids,
+    distribution = distribute_trade_ids(
+        distribution_data=distribution_data,
         qty_calculator=qty_calculator,
         shuffle_orders=shuffle_orders,
     )
