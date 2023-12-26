@@ -209,20 +209,3 @@ def distribute_trade_ids(
 
         distributions += trade_id_distribution
     return distributions
-
-
-def easy_distribute(
-    trades_master: pd.DataFrame,
-    allocations: pd.DataFrame,
-    qty_calculator: Callable[[dict[str, Any]], int],
-    shuffle_orders: bool = True,
-) -> pd.DataFrame:
-    distribution_data = parse_data(trades_master, allocations)
-
-    distribution = distribute_trade_ids(
-        distribution_data=distribution_data,
-        qty_calculator=qty_calculator,
-        shuffle_orders=shuffle_orders,
-    )
-
-    return pd.DataFrame(distribution)
