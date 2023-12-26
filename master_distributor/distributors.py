@@ -8,9 +8,6 @@ import pandas as pd
 from ._core import default_distribute
 
 
-Kwargs = dict[str, Any]
-
-
 class Distributor(ABC):
     @staticmethod
     @abstractmethod
