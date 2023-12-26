@@ -7,6 +7,8 @@ from typing import Any
 import pandas as pd
 
 from ._core import (
+    MasterDataTuple,
+    AllocationDataTuple,
     Distribution,
     parse_data,
     distribute_trade_id,
@@ -52,8 +54,8 @@ class RandomDistributor(Distributor):
 
     def _distribute_trade_id(
         self,
-        master_rows: list[tuple[str, str, str, int, float]],
-        allocations_rows: list[tuple[str, str, str, int, str]],
+        master_rows: list[MasterDataTuple],
+        allocations_rows: list[AllocationDataTuple],
     ) -> list[Distribution]:
         if not self._loop:
             return distribute_trade_id(
