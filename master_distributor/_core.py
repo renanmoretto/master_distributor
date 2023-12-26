@@ -7,8 +7,8 @@ import pandas as pd
 import polars as pl
 
 
-MasterDataTuple = tuple[str, str, str, int, float]
-AllocationDataTuple = tuple[str, str, str, int, str]
+MasterRowsAlias = tuple[str, str, str, int, float]
+AllocationRowsAlias = tuple[str, str, str, int, str]
 
 
 class TradeID(TypedDict):
@@ -135,8 +135,8 @@ def _filter_lazy_by_trade_id(
 
 
 def distribute_trade_id(
-    master_trade_id: list[MasterDataTuple],
-    allocations_trade_id: list[AllocationDataTuple],
+    master_trade_id: list[MasterRowsAlias],
+    allocations_trade_id: list[AllocationRowsAlias],
     qty_calculator: Callable[[dict[str, Any]], int],
     shuffle_orders: bool = True,
 ) -> list[Distribution]:
