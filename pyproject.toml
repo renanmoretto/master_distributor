@@ -8,6 +8,8 @@ packages = [{include = "master_distributor"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+pandas = "^2.1.4"
+polars = "^0.20.2"
 
 
 [build-system]
