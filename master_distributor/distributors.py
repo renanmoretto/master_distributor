@@ -1,7 +1,7 @@
 import random
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -26,7 +26,7 @@ class RandomDistributor(Distributor):
         self,
         shuffle_orders: bool = False,
         loop: bool = False,
-        std_break: Optional[float] = None,
+        std_break: float | None = None,
         else_return_best: bool = True,
         max_its: int = 50_000,
         verbose: bool = False,

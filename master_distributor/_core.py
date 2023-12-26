@@ -1,5 +1,5 @@
 import random
-from typing import TypedDict, Callable, Any, Optional
+from typing import TypedDict, Callable, Any
 
 import pandas as pd
 import polars as pl
@@ -46,7 +46,7 @@ def _parse_dataframe_to_lazy(
     required_columns: list[str],
     int_columns: list[str],
     float_columns: list[str],
-    consolidate_by: Optional[list[str]] = None,
+    consolidate_by: list[str] | None = None,
 ) -> pl.LazyFrame:
     df = df.copy()
     df = _ensure_columns(
