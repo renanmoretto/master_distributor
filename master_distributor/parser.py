@@ -26,6 +26,17 @@ class DistributionData:
     allocations_lazy: pl.LazyFrame
     trade_ids: list[TradeID]
 
+    def _post_init_(self):
+        slices_master = []
+        slices_allocations = []
+        for trade_id in self.trade_ids:
+            slice_master = _filter_lazy_by_trade_id(self.master_lazy, trade_id)
+            slice_allocations = _filter_lazy_by_trade_id(
+                self.allocations_lazy, trade_id
+            )
+            slices_master.append(slice_master)
+            slices_allocations.append(slice_allocations)
+
     def master_by_trade_id(self, trade_id: TradeID) -> pl.LazyFrame:
         return _filter_lazy_by_trade_id(self.master_lazy, trade_id)
 
@@ -96,11 +107,11 @@ def _compare_quantitites(master: pl.LazyFrame, allocations: pl.LazyFrame):
 
 
 def parse_data(
-    trades_master: pd.DataFrame,
+    master: pd.DataFrame,
     allocations: pd.DataFrame,
 ) -> DistributionData:
     master_lazy: pl.LazyFrame = _parse_dataframe_to_lazy(
-        df=trades_master,
+        df=master,
         required_columns=['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE'],
         int_columns=['QUANTITY'],
         float_columns=['PRICE'],

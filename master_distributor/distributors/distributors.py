@@ -4,7 +4,7 @@ from typing import Protocol, Callable
 
 import pandas as pd
 
-from ._core import distribute_slice_random
+from ._slice_distributors import distribute_slice_random
 
 
 class Distributor(Protocol):
