@@ -24,16 +24,14 @@ class Distribution(TypedDict):
 class DistributionData:
     master_lazy: pl.LazyFrame
     allocations_lazy: pl.LazyFrame
-    trade_ids: list[TradeID]
+    slices: list[TradeID]
 
     def _post_init_(self):
         slices_master = []
         slices_allocations = []
-        for trade_id in self.trade_ids:
-            slice_master = _filter_lazy_by_trade_id(self.master_lazy, trade_id)
-            slice_allocations = _filter_lazy_by_trade_id(
-                self.allocations_lazy, trade_id
-            )
+        for slice in self.slices:
+            slice_master = _filter_lazy_by_slice(self.master_lazy, slice)
+            slice_allocations = _filter_lazy_by_slice(self.allocations_lazy, slice)
             slices_master.append(slice_master)
             slices_allocations.append(slice_allocations)
 
@@ -41,14 +39,14 @@ class DistributionData:
         self.slices_allocations = slices_allocations
 
 
-def _filter_lazy_by_trade_id(
+def _filter_lazy_by_slice(
     lazyframe: pl.LazyFrame,
-    trade_id: TradeID,
+    slice: TradeID,
 ) -> pl.LazyFrame:
     return lazyframe.filter(
-        (pl.col('BROKER') == trade_id['BROKER'])
-        & (pl.col('TICKER') == trade_id['TICKER'])
-        & (pl.col('SIDE') == trade_id['SIDE'])
+        (pl.col('BROKER') == slice['BROKER'])
+        & (pl.col('TICKER') == slice['TICKER'])
+        & (pl.col('SIDE') == slice['SIDE'])
     )
 
 
@@ -125,12 +123,12 @@ def parse_data(
 
     _compare_quantitites(master_lazy, allocations_lazy)
 
-    trade_ids: list[TradeID] = (
+    slices: list[TradeID] = (
         master_lazy.select(['BROKER', 'TICKER', 'SIDE']).collect().unique().to_dicts()
     )  # type: ignore
 
     return DistributionData(
         master_lazy=master_lazy,
         allocations_lazy=allocations_lazy,
-        trade_ids=trade_ids,
+        slices=slices,
     )
