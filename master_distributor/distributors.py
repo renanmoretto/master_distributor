@@ -11,7 +11,7 @@ from ._core import (
     AllocationRowsAlias,
     Distribution,
     parse_data,
-    distribute_trade_id,
+    distribute_single_slice,
 )
 
 
@@ -58,7 +58,7 @@ class RandomDistributor(Distributor):
         allocations_rows: list[AllocationRowsAlias],
     ) -> list[Distribution]:
         if not self._loop:
-            return distribute_trade_id(
+            return distribute_single_slice(
                 master_trade_id=master_rows,  # type: ignore
                 allocations_trade_id=allocations_rows,  # type: ignore
                 qty_calculator=self._qty_calculator,
@@ -75,7 +75,7 @@ class RandomDistributor(Distributor):
         start = time.time()
         it = 0
         while it < self._max_its and best_std > std_break:
-            trade_id_distribution = distribute_trade_id(
+            trade_id_distribution = distribute_single_slice(
                 master_trade_id=master_rows,  # type: ignore
                 allocations_trade_id=allocations_rows,  # type: ignore
                 qty_calculator=self._qty_calculator,
