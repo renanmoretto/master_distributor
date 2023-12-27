@@ -20,7 +20,7 @@ class Distribution(TypedDict):
     PORTFOLIO: str
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass
 class DistributionData:
     master_lazy: pl.LazyFrame
     allocations_lazy: pl.LazyFrame
@@ -37,11 +37,8 @@ class DistributionData:
             slices_master.append(slice_master)
             slices_allocations.append(slice_allocations)
 
-    def master_by_trade_id(self, trade_id: TradeID) -> pl.LazyFrame:
-        return _filter_lazy_by_trade_id(self.master_lazy, trade_id)
-
-    def allocations_by_trade_id(self, trade_id: TradeID) -> pl.LazyFrame:
-        return _filter_lazy_by_trade_id(self.allocations_lazy, trade_id)
+        self.slices_master = slices_master
+        self.slices_allocations = slices_allocations
 
 
 def _filter_lazy_by_trade_id(
