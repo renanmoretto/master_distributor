@@ -12,7 +12,7 @@ def _distribution_average_price(
 ) -> dict[str, float]:
     """Returns a dict containing the average price for each portfolio"""
     portfolio_totals: dict[str, dict[str, Union[float, int]]] = defaultdict(
-        dict[str, Union[float, int]]
+        lambda: {'QUANTITY': 0, 'VOLUME': 0}
     )
     for qty, price, portfolio in distribution:
         portfolio_totals[portfolio]['QUANTITY'] += qty
@@ -28,6 +28,10 @@ def _distribution_average_price(
 
 def distribution_max_deviation(distribution: list[TupleDistributionAlias]) -> float:
     _dist_average_price = _distribution_average_price(distribution)
+    values = list(_dist_average_price.values())
+    max_value = max(values)
+    min_value = min(values)
+    return abs(max_value / min_value - 1)
 
     # Remove after impl
     return 1.0

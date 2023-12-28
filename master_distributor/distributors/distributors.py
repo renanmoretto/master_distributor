@@ -84,8 +84,7 @@ def _loop_distributor(
             TupleAllocationAlias
         ] = allocations_slice.collect()[['PORTFOLIO', 'QUANTITY']].rows()  # type: ignore
 
-        if verbose:
-            start = time.time()
+        start = time.time()
 
         best_distribution: list[TupleDistributionAlias] = []
         best_std = 1_000
@@ -101,13 +100,19 @@ def _loop_distributor(
                 best_distribution = slice_distribution
             it += 1
 
+        end = time.time()
+        if start != end:
+            total_time = end - start
+            vel = round(it / total_time, 4)
+        else:
+            vel = 0
+
         if verbose:
-            end = time.time()
-            total_time = end - start  # type: ignore
             print(
                 f'{it=}',
                 round(total_time, 4),
-                f"velocidade it/s: {round(it/total_time,4)}, f'melhor_desvio={best_std:,.2%}",
+                f"velocidade it/s: {vel}, f'melhor_desvio={best_std:,.2%}",
             )
+
         distribution += best_distribution
     return distribution_as_dataframe(distribution)
