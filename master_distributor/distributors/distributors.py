@@ -77,19 +77,21 @@ def _loop_distributor(
     for master_slice, allocations_slice in zip(
         data.master_slices, data.allocations_slices
     ):
-        master_slice_rows: list[TupleTradesAlias] = master_slice.collect().rows()  # type: ignore
+        master_slice_rows: list[TupleTradesAlias] = master_slice.collect()[
+            ['QUANTITY', 'PRICE']
+        ].rows()  # type: ignore
         allocations_slice_rows: list[
             TupleAllocationAlias
-        ] = allocations_slice.collect().rows()  # type: ignore
+        ] = allocations_slice.collect()[['PORTFOLIO', 'QUANTITY']].rows()  # type: ignore
 
         if verbose:
             start = time.time()
 
         best_distribution: list[TupleDistributionAlias] = []
-        best_std = 0
-        it = 0
+        best_std = 1_000
         dist_std = 1_000
-        while it < max_its and dist_std <= std_break:
+        it = 0
+        while it < max_its and dist_std >= std_break:
             slice_distribution = distribute_slice(
                 master_slice_rows, allocations_slice_rows
             )

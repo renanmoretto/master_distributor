@@ -26,7 +26,7 @@ class DistributionData:
     allocations_lazy: pl.LazyFrame
     slices: list[Slice]
 
-    def _post_init_(self):
+    def __post_init__(self):
         master_slices: list[pl.LazyFrame] = []
         allocations_slices: list[pl.LazyFrame] = []
         for slice in self.slices:
