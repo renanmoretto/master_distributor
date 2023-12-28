@@ -5,7 +5,10 @@ import pandas as pd
 import polars as pl
 
 from master_distributor.parser import Slice
-from ._slice_distributors import TupleDistributionAlias
+from ._types import (
+    TupleDistributionAlias,
+    TupleFullDistributionAlias,
+)
 
 
 def _distribution_average_price(
@@ -71,14 +74,14 @@ def verify_distribution(dist: pd.DataFrame, master: pd.DataFrame) -> bool:
 def add_slice_data_to_distribution(
     slice: Slice,
     slice_distribution: list[TupleDistributionAlias],
-) -> list[tuple[str, str, str, int, float, str]]:
+) -> list[TupleFullDistributionAlias]:
     broker = slice['BROKER']
     ticker = slice['TICKER']
     side = slice['SIDE']
 
-    slice_dist_list: list[tuple[str, str, str, int, float, str]] = []
+    slice_dist_list: list[TupleFullDistributionAlias] = []
     for qty, price, portfolio in slice_distribution:
-        _slice_tup: tuple[str, str, str, int, float, str] = (
+        _slice_tup: TupleFullDistributionAlias = (
             broker,
             ticker,
             side,
@@ -91,7 +94,7 @@ def add_slice_data_to_distribution(
 
 
 def distribution_as_dataframe(
-    distribution: list[tuple[str, str, str, int, float, str]],
+    distribution: list[TupleFullDistributionAlias],
     consolidate: bool = True,
 ) -> pd.DataFrame:
     cols = ['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE', 'PORTFOLIO']

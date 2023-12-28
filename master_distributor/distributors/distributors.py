@@ -10,17 +10,13 @@ from ._utils import (
     distribution_as_dataframe,
     add_slice_data_to_distribution,
 )
-from ._slice_distributors import (
+from ._slice_distributors import distribute_slice_random
+from ._types import (
     TupleTradesAlias,
     TupleAllocationAlias,
     TupleDistributionAlias,
-    distribute_slice_random,
+    FuncDistributeAlias,
 )
-
-
-FuncDistributeAlias = Callable[
-    [list[TupleTradesAlias], list[TupleAllocationAlias]], list[TupleDistributionAlias]
-]
 
 
 class Distributor(Protocol):

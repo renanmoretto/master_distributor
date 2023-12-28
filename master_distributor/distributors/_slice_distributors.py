@@ -5,11 +5,11 @@ Module containing the 'raw' functions that distributes a slice.
 import random
 from collections import defaultdict
 
-
-# Alias
-TupleTradesAlias = tuple[int, float]
-TupleAllocationAlias = tuple[str, int]
-TupleDistributionAlias = tuple[int, float, str]
+from ._types import (
+    TupleTradesAlias,
+    TupleAllocationAlias,
+    TupleDistributionAlias,
+)
 
 
 def _get_vertical_qty_per_portfolio(
