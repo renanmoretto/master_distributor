@@ -1,6 +1,6 @@
 import time
 
-from typing import Protocol, Callable, Any
+from typing import Protocol, Callable
 
 import pandas as pd
 
@@ -16,6 +16,7 @@ from ._types import (
     TupleAllocationAlias,
     TupleDistributionAlias,
     FuncDistributeAlias,
+    TupleFullDistributionAlias,
 )
 
 
@@ -71,7 +72,7 @@ def _loop_distributor(
     std_break = std_break if std_break else 0
     data = parse_data(master=trades, allocations=allocations)
 
-    distribution: list[tuple[str, str, str, int, float, str]] = []
+    distribution: list[TupleFullDistributionAlias] = []
     for master_slice, allocations_slice, slice_data in zip(
         data.master_slices, data.allocations_slices, data.slices
     ):
@@ -110,7 +111,7 @@ def _loop_distributor(
             print(
                 f'{it=}',
                 round(total_time, 4),
-                f"velocidade it/s: {vel}, f'melhor_desvio={best_std:,.2%}",
+                f'it/s: {vel}, best_std={best_std:,.2%}',
             )
 
         distribution += add_slice_data_to_distribution(slice_data, best_distribution)
