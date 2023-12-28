@@ -2,9 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from master_distributor.distributors.distributors import (
-    RandomDistributor,
-    UnitDistributor,
+from master_distributor.distributors import (
+    RandomLoopDistributor,
 )
 from master_distributor.utils import verify_distribution
 
@@ -18,37 +17,17 @@ allocations_sample['QUANTITY'] = allocations_sample['QUANTITY'].astype(int)  # t
 
 class TestRandomDistribution(TestCase):
     def test_distribution_no_args(self):
-        distributor = RandomDistributor()
+        distributor = RandomLoopDistributor()
         distribution = distributor.distribute(master_sample, allocations_sample)
         assert verify_distribution(distribution, master_sample)
 
     def test_distribution_all_args(self):
-        distributor = RandomDistributor(
+        distributor = RandomLoopDistributor(
             shuffle_orders=True,
-            loop=True,
-            std_break=0.05,
+            std_break=0.05 / 100,
             else_return_best=True,
             max_its=10_000,
-            verbose=False,
-        )
-        distribution = distributor.distribute(master_sample, allocations_sample)
-        assert verify_distribution(distribution, master_sample)
-
-
-class TestUnitDistribution(TestCase):
-    def test_distribution_no_args(self):
-        distributor = UnitDistributor()
-        distribution = distributor.distribute(master_sample, allocations_sample)
-        assert verify_distribution(distribution, master_sample)
-
-    def test_distribution_all_args(self):
-        distributor = UnitDistributor(
-            shuffle_orders=True,
-            loop=True,
-            std_break=0.05,
-            else_return_best=True,
-            max_its=10_000,
-            verbose=False,
+            verbose=True,
         )
         distribution = distributor.distribute(master_sample, allocations_sample)
         assert verify_distribution(distribution, master_sample)
