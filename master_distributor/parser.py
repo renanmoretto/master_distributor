@@ -97,11 +97,13 @@ def _compare_quantitites(master: pl.LazyFrame, allocations: pl.LazyFrame):
         master.group_by(['BROKER', 'TICKER', 'SIDE'], maintain_order=True)
         .sum()
         .drop(['PRICE'])
+        .sort(['BROKER', 'TICKER', 'SIDE'])
     )
     allocations_gpd = (
         allocations.group_by(['BROKER', 'TICKER', 'SIDE'], maintain_order=True)
         .sum()
         .drop(['PORTFOLIO'])
+        .sort(['BROKER', 'TICKER', 'SIDE'])
     )
     if not master_gpd.collect().equals(allocations_gpd.collect()):
         raise ValueError('Quantities for master and allocations are not equal')
