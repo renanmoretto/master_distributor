@@ -4,6 +4,7 @@ from typing import Union
 import pandas as pd
 import polars as pl
 
+from master_distributor.parser import Slice
 from ._slice_distributors import TupleDistributionAlias
 
 
@@ -33,13 +34,18 @@ def distribution_max_deviation(distribution: list[TupleDistributionAlias]) -> fl
     min_value = min(values)
     return abs(max_value / min_value - 1)
 
-    # Remove after impl
-    return 1.0
-
 
 def verify_distribution(dist: pd.DataFrame, master: pd.DataFrame) -> bool:
-    dist_lazy = pl.DataFrame(dist).lazy()
+    dist_lazy = pl.from_pandas(dist).lazy()
     master_lazy = pl.from_pandas(master).lazy()
+
+    # Ensure types
+    dist_lazy = dist_lazy.with_columns(
+        (pl.col('QUANTITY').cast(pl.Int32)), (pl.col('PRICE').cast(pl.Float64))
+    )
+    master_lazy = master_lazy.with_columns(
+        (pl.col('QUANTITY').cast(pl.Int32)), (pl.col('PRICE').cast(pl.Float64))
+    )
 
     cols_to_consolidate = ['BROKER', 'TICKER', 'SIDE', 'PRICE']
 
@@ -62,7 +68,43 @@ def verify_distribution(dist: pd.DataFrame, master: pd.DataFrame) -> bool:
     return df.collect()['OK'].all()
 
 
+def add_slice_data_to_distribution(
+    slice: Slice,
+    slice_distribution: list[TupleDistributionAlias],
+) -> list[tuple[str, str, str, int, float, str]]:
+    broker = slice['BROKER']
+    ticker = slice['TICKER']
+    side = slice['SIDE']
+
+    slice_dist_list: list[tuple[str, str, str, int, float, str]] = []
+    for qty, price, portfolio in slice_distribution:
+        _slice_tup: tuple[str, str, str, int, float, str] = (
+            broker,
+            ticker,
+            side,
+            qty,
+            price,
+            portfolio,
+        )
+        slice_dist_list.append(_slice_tup)
+    return slice_dist_list
+
+
 def distribution_as_dataframe(
-    distribution: list[TupleDistributionAlias],
+    distribution: list[tuple[str, str, str, int, float, str]],
+    consolidate: bool = True,
 ) -> pd.DataFrame:
-    ...
+    cols = ['BROKER', 'TICKER', 'SIDE', 'QUANTITY', 'PRICE', 'PORTFOLIO']
+    dist_df = pd.DataFrame(distribution)
+    dist_df.columns = cols
+
+    if consolidate:
+        dist_df = (
+            dist_df.groupby(['BROKER', 'TICKER', 'SIDE', 'PRICE', 'PORTFOLIO'])[  # type: ignore
+                'QUANTITY'
+            ]
+            .sum()
+            .reset_index()
+        )  # type: ignore
+        dist_df = dist_df[cols]
+    return dist_df.copy()

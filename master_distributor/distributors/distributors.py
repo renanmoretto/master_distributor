@@ -5,7 +5,11 @@ from typing import Protocol, Callable, Any
 import pandas as pd
 
 from master_distributor.parser import parse_data
-from ._utils import distribution_max_deviation, distribution_as_dataframe
+from ._utils import (
+    distribution_max_deviation,
+    distribution_as_dataframe,
+    add_slice_data_to_distribution,
+)
 from ._slice_distributors import (
     TupleTradesAlias,
     TupleAllocationAlias,
@@ -54,7 +58,6 @@ class RandomLoopDistributor(Distributor):
             distribute_slice=self._func_distribute_slice,
             shuffle_orders=self._shuffle_orders,
             std_break=self._std_break,
-            else_return_best=self._else_return_best,
             max_its=self._max_its,
             verbose=self._verbose,
         )
@@ -66,16 +69,15 @@ def _loop_distributor(
     distribute_slice: FuncDistributeAlias,
     shuffle_orders: bool,
     std_break: float | None,
-    else_return_best: bool,
     max_its: int,
     verbose: bool,
 ) -> pd.DataFrame:
     std_break = std_break if std_break else 0
     data = parse_data(master=trades, allocations=allocations)
 
-    distribution: list[TupleDistributionAlias] = []
-    for master_slice, allocations_slice in zip(
-        data.master_slices, data.allocations_slices
+    distribution: list[tuple[str, str, str, int, float, str]] = []
+    for master_slice, allocations_slice, slice_data in zip(
+        data.master_slices, data.allocations_slices, data.slices
     ):
         master_slice_rows: list[TupleTradesAlias] = master_slice.collect()[
             ['QUANTITY', 'PRICE']
@@ -91,13 +93,13 @@ def _loop_distributor(
         dist_std = 1_000
         it = 0
         while it < max_its and dist_std >= std_break:
-            slice_distribution = distribute_slice(
+            _slice_distribution = distribute_slice(
                 master_slice_rows, allocations_slice_rows
             )
-            dist_std = distribution_max_deviation(slice_distribution)
+            dist_std = distribution_max_deviation(_slice_distribution)
             if dist_std < best_std:
                 best_std = dist_std
-                best_distribution = slice_distribution
+                best_distribution = _slice_distribution
             it += 1
 
         end = time.time()
@@ -105,6 +107,7 @@ def _loop_distributor(
             total_time = end - start
             vel = round(it / total_time, 4)
         else:
+            total_time = 0
             vel = 0
 
         if verbose:
@@ -114,5 +117,5 @@ def _loop_distributor(
                 f"velocidade it/s: {vel}, f'melhor_desvio={best_std:,.2%}",
             )
 
-        distribution += best_distribution
+        distribution += add_slice_data_to_distribution(slice_data, best_distribution)
     return distribution_as_dataframe(distribution)
