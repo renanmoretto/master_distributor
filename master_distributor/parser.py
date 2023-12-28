@@ -5,7 +5,7 @@ import pandas as pd
 import polars as pl
 
 
-class TradeID(TypedDict):
+class Slice(TypedDict):
     BROKER: str
     TICKER: str
     SIDE: str
@@ -24,24 +24,24 @@ class Distribution(TypedDict):
 class DistributionData:
     master_lazy: pl.LazyFrame
     allocations_lazy: pl.LazyFrame
-    slices: list[TradeID]
+    slices: list[Slice]
 
     def _post_init_(self):
-        slices_master = []
-        slices_allocations = []
+        master_slices: list[pl.LazyFrame] = []
+        allocations_slices: list[pl.LazyFrame] = []
         for slice in self.slices:
-            slice_master = _filter_lazy_by_slice(self.master_lazy, slice)
-            slice_allocations = _filter_lazy_by_slice(self.allocations_lazy, slice)
-            slices_master.append(slice_master)
-            slices_allocations.append(slice_allocations)
+            master_slice = _filter_lazy_by_slice(self.master_lazy, slice)
+            allocation_slice = _filter_lazy_by_slice(self.allocations_lazy, slice)
+            master_slices.append(master_slice)
+            allocations_slices.append(allocation_slice)
 
-        self.slices_master = slices_master
-        self.slices_allocations = slices_allocations
+        self.master_slices = master_slices
+        self.allocations_slices = allocations_slices
 
 
 def _filter_lazy_by_slice(
     lazyframe: pl.LazyFrame,
-    slice: TradeID,
+    slice: Slice,
 ) -> pl.LazyFrame:
     return lazyframe.filter(
         (pl.col('BROKER') == slice['BROKER'])
@@ -123,7 +123,7 @@ def parse_data(
 
     _compare_quantitites(master_lazy, allocations_lazy)
 
-    slices: list[TradeID] = (
+    slices: list[Slice] = (
         master_lazy.select(['BROKER', 'TICKER', 'SIDE']).collect().unique().to_dicts()
     )  # type: ignore
 

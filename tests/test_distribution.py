@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from master_distributor.distributors import (
+from master_distributor.distributors.distributors import (
     RandomDistributor,
     UnitDistributor,
 )
