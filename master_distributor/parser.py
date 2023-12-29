@@ -4,6 +4,13 @@ from typing import TypedDict
 import pandas as pd
 import polars as pl
 
+from ._types import (
+    TupleTradesAlias,
+    TupleAllocationAlias,
+    TradesRowsAlias,
+    AllocationsRowsAlias,
+)
+
 
 class Slice(TypedDict):
     BROKER: str
@@ -38,13 +45,33 @@ class DistributionData:
         self.master_slices: list[pl.LazyFrame] = master_slices
         self.allocations_slices: list[pl.LazyFrame] = allocations_slices
 
-    def items(self) -> list[tuple[pl.LazyFrame, pl.LazyFrame, Slice]]:
-        return [
-            (m, a, s)
-            for (m, a, s) in zip(
-                self.master_slices, self.allocations_slices, self.slices
-            )
-        ]
+    def items(
+        self, raw: bool = False
+    ) -> (
+        list[tuple[pl.LazyFrame, pl.LazyFrame, Slice]]
+        | list[tuple[TradesRowsAlias, AllocationsRowsAlias, Slice]]
+    ):
+        if not raw:
+            return [
+                (m, a, s)
+                for (m, a, s) in zip(
+                    self.master_slices, self.allocations_slices, self.slices
+                )
+            ]
+
+        raw_data: list[tuple[TradesRowsAlias, AllocationsRowsAlias, Slice]] = []
+        for master_lazy_slice, allocations_lazy_slice, slice in zip(
+            self.master_slices, self.allocations_slices, self.slices
+        ):
+            master_slice_rows: list[TupleTradesAlias] = master_lazy_slice.collect()[
+                ['QUANTITY', 'PRICE']
+            ].rows()  # type: ignore
+            allocations_slice_rows: list[
+                TupleAllocationAlias
+            ] = allocations_lazy_slice.collect()[['PORTFOLIO', 'QUANTITY']].rows()  # type: ignore
+            raw_data.append((master_slice_rows, allocations_slice_rows, slice))
+
+        return raw_data
 
 
 def _filter_lazy_by_slice(

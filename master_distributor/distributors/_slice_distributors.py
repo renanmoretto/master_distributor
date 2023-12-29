@@ -5,7 +5,7 @@ Module containing the 'raw' functions that distributes a slice.
 import random
 from collections import defaultdict
 
-from ._types import (
+from master_distributor._types import (
     TupleTradesAlias,
     TupleAllocationAlias,
     TupleDistributionAlias,

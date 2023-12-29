@@ -5,7 +5,7 @@ import pandas as pd
 import polars as pl
 
 from master_distributor.parser import Slice
-from ._types import (
+from master_distributor._types import (
     TupleDistributionAlias,
     TupleFullDistributionAlias,
 )

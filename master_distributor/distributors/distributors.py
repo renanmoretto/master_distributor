@@ -5,19 +5,17 @@ from typing import Protocol, Callable
 import pandas as pd
 
 from master_distributor.parser import parse_data
+from master_distributor._types import (
+    TupleDistributionAlias,
+    FuncDistributeAlias,
+    TupleFullDistributionAlias,
+)
 from ._utils import (
     distribution_max_deviation,
     distribution_as_dataframe,
     add_slice_data_to_distribution,
 )
 from ._slice_distributors import distribute_slice_random
-from ._types import (
-    TupleTradesAlias,
-    TupleAllocationAlias,
-    TupleDistributionAlias,
-    FuncDistributeAlias,
-    TupleFullDistributionAlias,
-)
 
 
 class Distributor(Protocol):
@@ -67,7 +65,15 @@ def _single_distributor(
     verbose: bool,
 ) -> pd.DataFrame:
     data = parse_data(trades, allocations)
-    ...
+
+    distribution: list[TupleFullDistributionAlias] = []
+    for master_slice_rows, allocations_slice_rows, slice in data.items(raw=True):
+        slice_distribution = func_distribute_slice(
+            master_slice_rows,  # type: ignore
+            allocations_slice_rows,  # type: ignore
+        )
+        distribution += add_slice_data_to_distribution(slice, slice_distribution)
+    return distribution_as_dataframe(distribution)
 
 
 def _loop_distributor(
@@ -83,14 +89,8 @@ def _loop_distributor(
     data = parse_data(master=trades, allocations=allocations)
 
     distribution: list[TupleFullDistributionAlias] = []
-    for master_slice, allocations_slice, slice_data in data.items():
-        master_slice_rows: list[TupleTradesAlias] = master_slice.collect()[
-            ['QUANTITY', 'PRICE']
-        ].rows()  # type: ignore
-        allocations_slice_rows: list[
-            TupleAllocationAlias
-        ] = allocations_slice.collect()[['PORTFOLIO', 'QUANTITY']].rows()  # type: ignore
 
+    for master_slice_rows, allocations_slice_rows, slice in data.items(raw=True):
         start = time.time()
 
         best_distribution: list[TupleDistributionAlias] = []
@@ -99,7 +99,8 @@ def _loop_distributor(
         it = 0
         while it < max_its and dist_std >= std_break:
             _slice_distribution = func_distribute_slice(
-                master_slice_rows, allocations_slice_rows
+                master_slice_rows,  # type: ignore
+                allocations_slice_rows,  # type: ignore
             )
             dist_std = distribution_max_deviation(_slice_distribution)
             if dist_std < best_std:
@@ -122,5 +123,5 @@ def _loop_distributor(
                 f'it/s: {vel}, best_std={best_std:,.2%}',
             )
 
-        distribution += add_slice_data_to_distribution(slice_data, best_distribution)
+        distribution += add_slice_data_to_distribution(slice, best_distribution)
     return distribution_as_dataframe(distribution)
