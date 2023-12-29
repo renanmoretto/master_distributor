@@ -21,7 +21,24 @@ from ._slice_distributors import distribute_slice_random
 class Distributor(Protocol):
     _func_distribute_slice: Callable  # type: ignore
 
-    def distribute(self) -> pd.DataFrame:
+    def distribute(
+        self,
+        trades: pd.DataFrame,
+        allocations: pd.DataFrame,
+    ) -> pd.DataFrame:
+        ...
+
+
+class WeightedDistributor(Distributor):
+    def __init__(self, verbose: bool = False):
+        self._verbose = verbose
+        self._func_distribute_slice = ...
+
+    def distribute(
+        self,
+        trades: pd.DataFrame,
+        allocations: pd.DataFrame,
+    ) -> pd.DataFrame:
         ...
 
 
@@ -42,7 +59,7 @@ class RandomLoopDistributor(Distributor):
 
         self._func_distribute_slice: FuncDistributeAlias = distribute_slice_random
 
-    def distribute(  # type: ignore
+    def distribute(
         self,
         trades: pd.DataFrame,
         allocations: pd.DataFrame,
