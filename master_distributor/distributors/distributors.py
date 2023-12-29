@@ -119,8 +119,8 @@ def _loop_distributor(
         start = time.time()
 
         best_distribution: list[TupleDistributionAlias] = []
-        best_std = 1_000
-        dist_std = 1_000
+        best_std = float('inf')
+        dist_std = float('inf')
         it = 0
         while it < max_its and dist_std >= std_break:
             _slice_distribution = func_distribute_slice(
