@@ -78,6 +78,9 @@ def distribute_slice_weighted(
                     qty = 1
                 else:
                     qty = int(weights[portfolio] / quantity)
+                    if qty == 0:
+                        qty = 1
+                    second_loop = True
 
                 remaining_order_qty -= qty
                 remaining_vertical_qty_per_portfolio[portfolio] -= qty

@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Union
 
 import pandas as pd
-import polars as pl
 
 from master_distributor.parser import Slice
 from master_distributor._types import (
@@ -36,39 +35,6 @@ def distribution_max_deviation(distribution: list[TupleDistributionAlias]) -> fl
     max_value = max(values)
     min_value = min(values)
     return abs(max_value / min_value - 1)
-
-
-def verify_distribution(dist: pd.DataFrame, master: pd.DataFrame) -> bool:
-    dist_lazy = pl.from_pandas(dist).lazy()
-    master_lazy = pl.from_pandas(master).lazy()
-
-    # Ensure types
-    dist_lazy = dist_lazy.with_columns(
-        (pl.col('QUANTITY').cast(pl.Int32)), (pl.col('PRICE').cast(pl.Float64))
-    )
-    master_lazy = master_lazy.with_columns(
-        (pl.col('QUANTITY').cast(pl.Int32)), (pl.col('PRICE').cast(pl.Float64))
-    )
-
-    cols_to_consolidate = ['BROKER', 'TICKER', 'SIDE', 'PRICE']
-
-    master_grpd = (
-        master_lazy.group_by(cols_to_consolidate)
-        .sum()
-        .rename({'QUANTITY': 'QTY_MASTER'})
-    )
-
-    dist_grpd = (
-        dist_lazy.group_by(cols_to_consolidate)
-        .sum()
-        .drop(['PORTFOLIO'])
-        .rename({'QUANTITY': 'QTY_DIST'})
-    )
-
-    df = master_grpd.join(dist_grpd, on=cols_to_consolidate).with_columns(
-        (pl.col('QTY_MASTER') - pl.col('QTY_DIST') == 0).alias('OK')
-    )
-    return df.collect()['OK'].all()
 
 
 def add_slice_data_to_distribution(
