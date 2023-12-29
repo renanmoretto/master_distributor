@@ -122,7 +122,7 @@ def _parse_dataframe_to_lazy(
     )
     df_lazy = pl.from_pandas(df).lazy()
     if consolidate_by:
-        df_lazy = df_lazy.group_by(consolidate_by).sum()
+        df_lazy = df_lazy.group_by(consolidate_by, maintain_order=True).sum()
     df_lazy = df_lazy.select(required_columns)
     return df_lazy
 

@@ -77,7 +77,7 @@ def distribute_slice_weighted(
                 if second_loop:
                     qty = 1
                 else:
-                    qty = int(weights[portfolio] / quantity)
+                    qty = int(weights[portfolio] * quantity)
                     if qty == 0:
                         qty = 1
                     second_loop = True
@@ -86,7 +86,6 @@ def distribute_slice_weighted(
                 remaining_vertical_qty_per_portfolio[portfolio] -= qty
 
                 slice_distribution.append((qty, price, portfolio))
-
     return slice_distribution
 
 

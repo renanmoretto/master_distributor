@@ -41,14 +41,14 @@ def compare_average_price(
     master_avg = (
         pl.from_pandas(master)
         .with_columns(VOLUME=(pl.col('QUANTITY') * pl.col('PRICE')))
-        .group_by(['BROKER', 'TICKER', 'SIDE'])
+        .group_by(['BROKER', 'TICKER', 'SIDE'], maintain_order=True)
         .agg((pl.col('VOLUME').sum() / pl.col('QUANTITY').sum()).alias('AVG_PRICE'))
     )
 
     comp = (
         pl.from_pandas(distribution)
         .with_columns(VOLUME=(pl.col('QUANTITY') * pl.col('PRICE')))
-        .group_by(['BROKER', 'TICKER', 'SIDE', 'PORTFOLIO'])
+        .group_by(['BROKER', 'TICKER', 'SIDE', 'PORTFOLIO'], maintain_order=True)
         .agg((pl.col('VOLUME').sum() / pl.col('QUANTITY').sum()).alias('AVG_PRICE'))
     )
 
