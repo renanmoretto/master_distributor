@@ -15,7 +15,10 @@ from ._utils import (
     distribution_as_dataframe,
     add_slice_data_to_distribution,
 )
-from ._slice_distributors import distribute_slice_random
+from ._slice_distributors import (
+    distribute_slice_weighted,
+    distribute_slice_random,
+)
 
 
 class Distributor(Protocol):
@@ -32,14 +35,19 @@ class Distributor(Protocol):
 class WeightedDistributor(Distributor):
     def __init__(self, verbose: bool = False):
         self._verbose = verbose
-        self._func_distribute_slice = ...
+        self._func_distribute_slice: FuncDistributeAlias = distribute_slice_weighted
 
     def distribute(
         self,
         trades: pd.DataFrame,
         allocations: pd.DataFrame,
     ) -> pd.DataFrame:
-        ...
+        return _single_distributor(
+            trades=trades,
+            allocations=allocations,
+            func_distribute_slice=self._func_distribute_slice,
+            verbose=self._verbose,
+        )
 
 
 class RandomLoopDistributor(Distributor):

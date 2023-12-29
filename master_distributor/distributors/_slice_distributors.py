@@ -45,10 +45,8 @@ def _sort_by_average_price(orders: list[TupleTradesAlias]) -> list[TupleTradesAl
 def distribute_slice_weighted(
     trades: list[TupleTradesAlias],
     allocations: list[TupleAllocationAlias],
-    shuffle_orders: bool = True,
 ) -> list[TupleDistributionAlias]:
     orders = trades
-
     # Start by the closest price to the average price of all trades
     orders = _sort_by_average_price(orders)
 
