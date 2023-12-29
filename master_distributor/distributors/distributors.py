@@ -52,7 +52,7 @@ class RandomLoopDistributor(Distributor):
         return _loop_distributor(
             trades=trades,
             allocations=allocations,
-            distribute_slice=self._func_distribute_slice,
+            func_distribute_slice=self._func_distribute_slice,
             shuffle_orders=self._shuffle_orders,
             std_break=self._std_break,
             max_its=self._max_its,
@@ -60,10 +60,20 @@ class RandomLoopDistributor(Distributor):
         )
 
 
+def _single_distributor(
+    trades: pd.DataFrame,
+    allocations: pd.DataFrame,
+    func_distribute_slice: FuncDistributeAlias,
+    verbose: bool,
+) -> pd.DataFrame:
+    data = parse_data(trades, allocations)
+    ...
+
+
 def _loop_distributor(
     trades: pd.DataFrame,
     allocations: pd.DataFrame,
-    distribute_slice: FuncDistributeAlias,
+    func_distribute_slice: FuncDistributeAlias,
     shuffle_orders: bool,
     std_break: float | None,
     max_its: int,
@@ -73,9 +83,7 @@ def _loop_distributor(
     data = parse_data(master=trades, allocations=allocations)
 
     distribution: list[TupleFullDistributionAlias] = []
-    for master_slice, allocations_slice, slice_data in zip(
-        data.master_slices, data.allocations_slices, data.slices
-    ):
+    for master_slice, allocations_slice, slice_data in data.items():
         master_slice_rows: list[TupleTradesAlias] = master_slice.collect()[
             ['QUANTITY', 'PRICE']
         ].rows()  # type: ignore
@@ -90,7 +98,7 @@ def _loop_distributor(
         dist_std = 1_000
         it = 0
         while it < max_its and dist_std >= std_break:
-            _slice_distribution = distribute_slice(
+            _slice_distribution = func_distribute_slice(
                 master_slice_rows, allocations_slice_rows
             )
             dist_std = distribution_max_deviation(_slice_distribution)

@@ -35,8 +35,16 @@ class DistributionData:
             master_slices.append(master_slice)
             allocations_slices.append(allocation_slice)
 
-        self.master_slices = master_slices
-        self.allocations_slices = allocations_slices
+        self.master_slices: list[pl.LazyFrame] = master_slices
+        self.allocations_slices: list[pl.LazyFrame] = allocations_slices
+
+    def items(self) -> list[tuple[pl.LazyFrame, pl.LazyFrame, Slice]]:
+        return [
+            (m, a, s)
+            for (m, a, s) in zip(
+                self.master_slices, self.allocations_slices, self.slices
+            )
+        ]
 
 
 def _filter_lazy_by_slice(
