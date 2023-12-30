@@ -45,20 +45,15 @@ class DistributionData:
         self.master_slices: list[pl.LazyFrame] = master_slices
         self.allocations_slices: list[pl.LazyFrame] = allocations_slices
 
-    def items(
-        self, raw: bool = False
-    ) -> (
-        list[tuple[pl.LazyFrame, pl.LazyFrame, Slice]]
-        | list[tuple[TradesRowsAlias, AllocationsRowsAlias, Slice]]
-    ):
-        if not raw:
-            return [
-                (m, a, s)
-                for (m, a, s) in zip(
-                    self.master_slices, self.allocations_slices, self.slices
-                )
-            ]
+    def items(self) -> list[tuple[pl.LazyFrame, pl.LazyFrame, Slice]]:
+        return [
+            (m, a, s)
+            for (m, a, s) in zip(
+                self.master_slices, self.allocations_slices, self.slices
+            )
+        ]
 
+    def items_raw(self) -> list[tuple[TradesRowsAlias, AllocationsRowsAlias, Slice]]:
         raw_data: list[tuple[TradesRowsAlias, AllocationsRowsAlias, Slice]] = []
         for master_lazy_slice, allocations_lazy_slice, slice in zip(
             self.master_slices, self.allocations_slices, self.slices
